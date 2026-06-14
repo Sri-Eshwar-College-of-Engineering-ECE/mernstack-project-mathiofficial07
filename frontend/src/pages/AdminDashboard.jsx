@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, ShoppingCart, IndianRupee, Users, Plus, Pencil, Trash2, LogOut, Search } from "lucide-react";
+import { Package, ShoppingCart, IndianRupee, Users, Plus, Pencil, Trash2, LogOut, Search, RotateCw } from "lucide-react";
 import { getProducts, getOrders, updateOrderStatus, deleteProduct, deleteOrder, createProduct, updateProduct } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -31,28 +31,29 @@ const AdminDashboard = () => {
     });
     const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
+    const refreshData = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const [fetchedProducts, fetchedOrders] = await Promise.all([
+                getProducts(),
+                getOrders()
+            ]);
+            setProductsList(fetchedProducts);
+            setOrders(fetchedOrders);
+            if (!silent) toast.success("Dashboard data refreshed!");
+        } catch (error) {
+            toast.error("Failed to load dashboard data");
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (sessionStorage.getItem("adminAuth") !== "true") {
             navigate("/admin-login", { replace: true });
             return;
         }
-
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const [fetchedProducts, fetchedOrders] = await Promise.all([
-                    getProducts(),
-                    getOrders()
-                ]);
-                setProductsList(fetchedProducts);
-                setOrders(fetchedOrders);
-            } catch (error) {
-                toast.error("Failed to load dashboard data");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        refreshData(true);
     }, []);
 
     const totalRevenue = orders.reduce((s, o) => s + (o.totalPrice || 0), 0);
@@ -182,14 +183,23 @@ const AdminDashboard = () => {
                         <h1 className="text-3xl font-display font-bold text-foreground mb-2">Admin Dashboard</h1>
                         <p className="text-muted-foreground">Manage your products and orders.</p>
                     </motion.div>
-                    <motion.button
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition text-sm font-medium"
-                    >
-                        <LogOut className="h-4 w-4" /> Sign Out
-                    </motion.button>
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <button
+                            onClick={() => refreshData()}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-secondary border text-foreground transition text-sm font-medium"
+                        >
+                            <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+                        </button>
+                        <motion.button
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition text-sm font-medium"
+                        >
+                            <LogOut className="h-4 w-4" /> Sign Out
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Stats */}
