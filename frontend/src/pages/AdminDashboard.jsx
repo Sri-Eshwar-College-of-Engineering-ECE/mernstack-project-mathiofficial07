@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, ShoppingCart, DollarSign, Users, Plus, Pencil, Trash2, LogOut, Search } from "lucide-react";
+import { Package, ShoppingCart, IndianRupee, Users, Plus, Pencil, Trash2, LogOut, Search } from "lucide-react";
 import { getProducts, getOrders, updateOrderStatus, deleteProduct, deleteOrder, createProduct, updateProduct } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -157,7 +157,7 @@ const AdminDashboard = () => {
     const stats = [
         { icon: Package, label: "Products", value: productsList.length, color: "text-primary" },
         { icon: ShoppingCart, label: "Orders", value: orders.length, color: "text-accent" },
-        { icon: DollarSign, label: "Revenue", value: `₹${totalRevenue.toLocaleString()}`, color: "text-forest" },
+        { icon: IndianRupee, label: "Revenue", value: `₹${totalRevenue.toLocaleString()}`, color: "text-forest" },
         { icon: Users, label: "Customers", value: new Set(orders.map((o) => o.email)).size, color: "text-gold-dark" },
     ];
 
@@ -354,8 +354,17 @@ const AdminDashboard = () => {
                                         <tr key={o._id || o.id} className="hover:bg-secondary/30 transition">
                                             <td className="p-3 font-medium text-foreground text-xs">{(o._id || o.id).slice(-6)}</td>
                                             <td className="p-3">
-                                                <p className="text-foreground">{o.customerName}</p>
-                                                <p className="text-xs text-muted-foreground">{o.phone}</p>
+                                                <p className="font-semibold text-foreground">{o.customerName}</p>
+                                                <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                                                    <p>📞 {o.phone}</p>
+                                                    <p>✉️ {o.email}</p>
+                                                    <p>📍 {o.address}</p>
+                                                    {o.notes && (
+                                                        <p className="italic text-amber-600 dark:text-amber-400 mt-1">
+                                                            Note: "{o.notes}"
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="p-3 text-muted-foreground">{o.productName} ({o.weight})</td>
                                             <td className="p-3 text-muted-foreground">{o.quantity}</td>

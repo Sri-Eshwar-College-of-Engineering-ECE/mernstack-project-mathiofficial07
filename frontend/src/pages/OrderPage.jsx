@@ -42,6 +42,17 @@ const OrderPage = () => {
     const selectedProduct = products.find((p) => p._id === form.productId || p.id === form.productId);
     const selectedVariant = selectedProduct?.variants.find((v) => (v._id || v.id) === form.variantId) || selectedProduct?.variants[0];
 
+    // Sync URL search params to form state (handling cases where params load after initial render)
+    useEffect(() => {
+        if (productIdParam) {
+            setForm((prev) => ({
+                ...prev,
+                productId: productIdParam,
+                variantId: variantIdParam || prev.variantId,
+            }));
+        }
+    }, [productIdParam, variantIdParam]);
+
     // Ensure variantId is set if productId is pre-selected but variantId isn't
     useEffect(() => {
         if (selectedProduct && !form.variantId) {
