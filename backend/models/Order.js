@@ -28,7 +28,7 @@ const MongooseOrder = mongoose.model('Order', orderSchema);
 // Dynamic proxy that routes calls to MongoDB or JSON DB depending on connection state
 const OrderProxy = new Proxy(MongooseOrder, {
   construct(target, args) {
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
       return new target(...args);
     } else {
       const { getMockOrderModel } = require('../utils/jsonDb');
@@ -37,7 +37,7 @@ const OrderProxy = new Proxy(MongooseOrder, {
     }
   },
   get(target, prop, receiver) {
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
       const val = Reflect.get(target, prop, receiver);
       if (typeof val === 'function') return val.bind(target);
       return val;

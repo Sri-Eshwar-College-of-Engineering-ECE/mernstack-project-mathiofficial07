@@ -22,7 +22,7 @@ const MongooseProduct = mongoose.model('Product', productSchema);
 // Dynamic proxy that routes calls to MongoDB or JSON DB depending on connection state
 const ProductProxy = new Proxy(MongooseProduct, {
   construct(target, args) {
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
       return new target(...args);
     } else {
       const { getMockProductModel } = require('../utils/jsonDb');
@@ -31,7 +31,7 @@ const ProductProxy = new Proxy(MongooseProduct, {
     }
   },
   get(target, prop, receiver) {
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
       const val = Reflect.get(target, prop, receiver);
       if (typeof val === 'function') return val.bind(target);
       return val;
