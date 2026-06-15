@@ -22,9 +22,19 @@ exports.createOrder = async (req, res) => {
     try {
       const product = await Product.findById(savedOrder.productId);
       if (product) {
-        const variant = product.variants.id(savedOrder.variantId);
+        let variant = typeof product.variants.id === 'function' ? product.variants.id(savedOrder.variantId) : null;
+        
+        // Fallback manual search
+        if (!variant && product.variants && Array.isArray(product.variants)) {
+          variant = product.variants.find(v => 
+            (v._id && v._id.toString() === savedOrder.variantId.toString()) ||
+            (v.id && v.id.toString() === savedOrder.variantId.toString())
+          );
+        }
+
         if (variant) {
           variant.stock = Math.max(0, variant.stock - (savedOrder.quantity || 1));
+          product.markModified('variants');
           await product.save();
           console.log(`✅ Stock updated for ${product.name} (${variant.weight}). New stock: ${variant.stock}`);
         } else {
@@ -79,6 +89,36 @@ exports.deleteOrder = async (req, res) => {
   try {
     const deletedOrder = await Order.findByIdAndDelete(req.params.id);
     if (!deletedOrder) return res.status(404).json({ message: 'Order not found' });
+
+    // Restore Product Stock
+    try {
+      const product = await Product.findById(deletedOrder.productId);
+      if (product) {
+        let variant = typeof product.variants.id === 'function' ? product.variants.id(deletedOrder.variantId) : null;
+        
+        // Fallback manual search
+        if (!variant && product.variants && Array.isArray(product.variants)) {
+          variant = product.variants.find(v => 
+            (v._id && v._id.toString() === deletedOrder.variantId.toString()) ||
+            (v.id && v.id.toString() === deletedOrder.variantId.toString())
+          );
+        }
+
+        if (variant) {
+          variant.stock = variant.stock + (deletedOrder.quantity || 1);
+          product.markModified('variants');
+          await product.save();
+          console.log(`✅ Stock restored for ${product.name} (${variant.weight}). New stock: ${variant.stock}`);
+        } else {
+          console.warn(`⚠️ Variant ${deletedOrder.variantId} not found for product ${deletedOrder.productId} during stock restoration`);
+        }
+      } else {
+        console.warn(`⚠️ Product ${deletedOrder.productId} not found during stock restoration`);
+      }
+    } catch (stockError) {
+      console.error('❌ Error restoring stock during deletion:', stockError.message);
+    }
+
     res.status(200).json({ message: 'Order deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting order', error: error.message });

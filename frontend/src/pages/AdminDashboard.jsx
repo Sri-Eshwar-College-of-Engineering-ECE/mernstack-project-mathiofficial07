@@ -85,6 +85,10 @@ const AdminDashboard = () => {
             await deleteOrder(id);
             setOrders(orders.filter(o => o._id !== id && o.id !== id));
             toast.success("Order deleted successfully");
+
+            // Refresh products to show restored stock levels immediately
+            const fetchedProducts = await getProducts();
+            setProductsList(fetchedProducts);
         } catch (error) {
             toast.error("Failed to delete order");
         }
