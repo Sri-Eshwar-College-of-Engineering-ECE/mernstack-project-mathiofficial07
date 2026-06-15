@@ -44,7 +44,7 @@ const AdminDashboard = () => {
         } catch (error) {
             toast.error("Failed to load dashboard data");
         } finally {
-            if (!silent) setLoading(false);
+            setLoading(false);
         }
     };
 
@@ -117,6 +117,24 @@ const AdminDashboard = () => {
         setIsModalOpen(true);
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                toast.error("Image size must be less than 2MB");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    image: reader.result // Base64 data URL
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleAddVariant = () => {
         setFormData({
             ...formData,
@@ -138,6 +156,10 @@ const AdminDashboard = () => {
 
     const handleSaveProduct = async (e) => {
         e.preventDefault();
+        if (!formData.image) {
+            toast.error("Please upload a product image");
+            return;
+        }
         try {
             if (isEditing) {
                 await updateProduct(selectedProductId, formData);
@@ -351,6 +373,7 @@ const AdminDashboard = () => {
                                 <thead className="bg-secondary/50">
                                     <tr>
                                         <th className="text-left p-3 text-muted-foreground font-medium">Order ID</th>
+                                        <th className="text-left p-3 text-muted-foreground font-medium">Date & Time</th>
                                         <th className="text-left p-3 text-muted-foreground font-medium">Customer</th>
                                         <th className="text-left p-3 text-muted-foreground font-medium">Product</th>
                                         <th className="text-left p-3 text-muted-foreground font-medium">Qty</th>
@@ -363,6 +386,9 @@ const AdminDashboard = () => {
                                     {filteredOrders.map((o) => (
                                         <tr key={o._id || o.id} className="hover:bg-secondary/30 transition">
                                             <td className="p-3 font-medium text-foreground text-xs">{(o._id || o.id).slice(-6)}</td>
+                                            <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
+                                                {o.orderDate ? new Date(o.orderDate).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : new Date(o.createdAt || Date.now()).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                                            </td>
                                             <td className="p-3">
                                                 <p className="font-semibold text-foreground">{o.customerName}</p>
                                                 <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
@@ -438,14 +464,25 @@ const AdminDashboard = () => {
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-1.5">
-                                        <label className="text-sm font-medium">Image URL</label>
+                                        <label className="text-sm font-medium">Product Image</label>
                                         <input 
-                                            required
-                                            value={formData.image}
-                                            onChange={(e) => setFormData({...formData, image: e.target.value})}
-                                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                            placeholder="https://images.unsplash.com/..."
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            className="w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                                         />
+                                        {formData.image && (
+                                            <div className="mt-2 relative w-32 h-32 rounded-xl overflow-hidden border">
+                                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, image: "" })}
+                                                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1.5 rounded-full text-xs shadow-md"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="md:col-span-2 space-y-1.5">
                                         <label className="text-sm font-medium">Description</label>
